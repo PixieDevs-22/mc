@@ -5,6 +5,10 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    # THIS IS THE FIX: We are telling GitHub this is allowed to go to Pages
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     permissions:
       contents: read
       pages: write
@@ -18,7 +22,6 @@ jobs:
         with:
           node-version: 20
 
-      # Step 1: Strip out the broken package patches
       - name: The Ultimate Patch Remover
         run: |
           node -e "
@@ -51,7 +54,6 @@ jobs:
           rm -f pnpm-lock.yaml
           rm -f */pnpm-lock.yaml
 
-      # Step 2: Auto-create dummy files to bypass the missing code errors
       - name: Fake the missing dev files
         run: |
           mkdir -p renderer/playground
@@ -61,11 +63,11 @@ jobs:
           echo "" > renderer/playground/playground.ts
           echo "export const registerOpenBenchmarkListener = () => {};" > src/benchmark.ts
 
-      # Step 3: Install and Build
       - run: pnpm install --no-frozen-lockfile --ignore-scripts
       - run: pnpm build
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
-      - uses: actions/deploy-pages@v4
-      
+      - id: deployment
+        uses: actions/deploy-pages@v4
+        
