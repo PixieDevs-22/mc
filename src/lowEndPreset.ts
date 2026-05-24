@@ -25,7 +25,7 @@ export const lowEndPreset: PartialOptions = {
   smoothLighting: false,       // AO pass is expensive — disable
   starfieldRendering: false,   // fills background pixels every frame
   defaultSkybox: true,         // keep sky color, skip starfield
-  disableBlockEntityTextures: true, // saves draw calls on chest/signs etc.
+  disableBlockEntityTextures: false, // saves draw calls on chest/signs etc.
   viewBobbing: false,          // camera movement recalculation every frame
 
   // === CPU SAVINGS ===
