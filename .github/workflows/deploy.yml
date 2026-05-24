@@ -19,11 +19,15 @@ jobs:
           node-version: 20
           cache: pnpm
       
-      # Strip patches from package.json
-      - name: Strip broken patches
+      # Step 1: Wipe the physical patches folder completely
+      - name: Delete physical patches folder
+        run: rm -rf patches
+
+      # Step 2: Strip patches from package.json config
+      - name: Strip broken patches from config
         run: node -e "const fs = require('fs'); const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8')); delete pkg.patchedDependencies; fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));"
 
-      # Force pnpm to completely ignore the lockfile and patches
+      # Step 3: Run install completely clean
       - run: pnpm install --no-lockfile
       - run: pnpm build
       - uses: actions/upload-pages-artifact@v3
