@@ -19,11 +19,14 @@ jobs:
           node-version: 20
           cache: pnpm
       
-      # Step 1: Wipe physical patches everywhere
-      - name: Delete physical patches folder
-        run: rm -rf patches
+      # Step 1: Obliterate the patches folder AND the locked cache files completely
+      - name: Nuke patches and lockfiles
+        run: |
+          rm -rf patches
+          rm -f pnpm-lock.yaml
+          rm -f */pnpm-lock.yaml
 
-      # Step 2: Search EVERY folder for package.json and strip patchedDependencies
+      # Step 2: Strip patchedDependencies from all workspace package.json files
       - name: Strip broken patches from all workspace projects
         run: |
           node -e "
@@ -52,8 +55,8 @@ jobs:
           cleanPackages('.');
           "
 
-      # Step 3: Run install with a flag telling pnpm to completely ignore workspace patch rules
-      - run: pnpm install --no-lockfile --ignore-scripts
+      # Step 3: Run install completely fresh without any historical constraints
+      - run: pnpm install --no-frozen-lockfile --ignore-scripts
       - run: pnpm build
       - uses: actions/upload-pages-artifact@v3
         with:
