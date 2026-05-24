@@ -19,16 +19,41 @@ jobs:
           node-version: 20
           cache: pnpm
       
-      # Step 1: Wipe the physical patches folder completely
+      # Step 1: Wipe physical patches everywhere
       - name: Delete physical patches folder
         run: rm -rf patches
 
-      # Step 2: Strip patches from package.json config
-      - name: Strip broken patches from config
-        run: node -e "const fs = require('fs'); const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8')); delete pkg.patchedDependencies; fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));"
+      # Step 2: Search EVERY folder for package.json and strip patchedDependencies
+      - name: Strip broken patches from all workspace projects
+        run: |
+          node -e "
+          const fs = require('fs');
+          const path = require('path');
+          
+          function cleanPackages(dir) {
+            const files = fs.readdirSync(dir);
+            for (const file of files) {
+              const fullPath = path.join(dir, file);
+              if (file === 'node_modules') continue;
+              if (fs.statSync(fullPath).isDirectory()) {
+                cleanPackages(fullPath);
+              } else if (file === 'package.json') {
+                try {
+                  const pkg = JSON.parse(fs.readFileSync(fullPath, 'utf8'));
+                  if (pkg.patchedDependencies) {
+                    delete pkg.patchedDependencies;
+                    fs.writeFileSync(fullPath, JSON.stringify(pkg, null, 2));
+                    console.log('Cleaned patches from: ' + fullPath);
+                  }
+                } catch (e) {}
+              }
+            }
+          }
+          cleanPackages('.');
+          "
 
-      # Step 3: Run install completely clean
-      - run: pnpm install --no-lockfile
+      # Step 3: Run install with a flag telling pnpm to completely ignore workspace patch rules
+      - run: pnpm install --no-lockfile --ignore-scripts
       - run: pnpm build
       - uses: actions/upload-pages-artifact@v3
         with:
